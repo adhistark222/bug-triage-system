@@ -1,5 +1,13 @@
 # Bug Triage System
 
+## Description
+
+This project is a small internal security report triage system built to demonstrate realistic full-stack architecture in a constrained scope. Reporters submit structured vulnerability reports through a React frontend. Laravel validates and stores submissions, securely handles optional attachments, and dispatches an asynchronous triage job so intake remains fast.
+
+Triage uses deterministic scoring logic to assign a priority score and severity bucket, helping reviewers sort reports consistently. Reviewers then view filtered reports and make a final workflow decision. The design intentionally avoids unnecessary service boundaries and premature caching so the architecture stays coherent and maintainable.
+
+In short, the goal is to show pragmatic engineering tradeoffs: enough structure to feel production-like, without overengineering the system.
+
 Monorepo for a bug triage platform with:
 
 - `backend/`: Laravel API
