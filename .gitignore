@@ -37,6 +37,7 @@ backend/.phpunit.result.cache
 backend/coverage/
 backend/.coverage
 backend/database/*.sqlite
+backend/bug_triage
 
 # Frontend (React + Vite)
 frontend/node_modules/
