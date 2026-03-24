@@ -102,10 +102,10 @@ class ReportSubmissionTest extends TestCase
         $report = Report::first();
         $this->assertNotNull($report->attachment_storage_path);
 
-        Storage::disk('local')->assertExists($report->attachment_storage_path);
+        $this->assertTrue(Storage::disk('local')->exists($report->attachment_storage_path));
 
         // Must never be on the public disk
-        Storage::disk('public')->assertMissing($report->attachment_storage_path);
+        $this->assertFalse(Storage::disk('public')->exists($report->attachment_storage_path));
     }
 
     public function test_attachment_filename_is_generated_not_user_supplied(): void

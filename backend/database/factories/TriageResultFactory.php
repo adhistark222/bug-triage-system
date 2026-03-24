@@ -27,7 +27,7 @@ class TriageResultFactory extends Factory
             'report_id'      => Report::factory(),
             'priority_score' => $total,
             'severity_bucket' => $this->bucketFor($total),
-            'fingerprint'    => hash('sha256', Str::uuid()),
+            'fingerprint'    => hash('sha256', (string) Str::uuid()),
             'breakdown_json' => json_encode([
                 'severity_score'     => $severityScore,
                 'vuln_type_score'    => $vulnTypeScore,
