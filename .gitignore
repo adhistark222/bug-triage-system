@@ -38,6 +38,7 @@ backend/coverage/
 backend/.coverage
 backend/database/*.sqlite
 backend/bug_triage
+backend/*.code-workspace
 
 # Frontend (React + Vite)
 frontend/node_modules/
