@@ -2,15 +2,15 @@ import SubmissionIntro from '../../components/reporter/SubmissionIntro.jsx'
 import ReportForm from '../../components/reporter/ReportForm.jsx'
 import AppLayout from '../../layouts/AppLayout.jsx'
 
-function ReportSubmitView() {
+function ReportSubmitPage() {
   return (
     <AppLayout>
       <section className="report-submit-view">
-      <SubmissionIntro />
-      <ReportForm />
+        <SubmissionIntro />
+        <ReportForm />
       </section>
     </AppLayout>
   )
 }
 
-export default ReportSubmitView
+export default ReportSubmitPage

@@ -1,4 +1,8 @@
 import { useRef, useState } from 'react'
+import { submitReport } from '../../api/reports.js'
+import CharacterCount from './form/CharacterCount.jsx'
+import FieldRow from './form/FieldRow.jsx'
+import FilePickerStatus from './form/FilePickerStatus.jsx'
 
 const VULNERABILITY_TYPES = [
   'rce',
@@ -38,7 +42,6 @@ const INITIAL_VALUES = {
   contact_email: '',
 }
 
-const REQUIRED_LABEL = ' (required)'
 const FIELD_FOCUS_ORDER = [
   'title',
   'vulnerability_type',
@@ -116,6 +119,9 @@ function ReportForm() {
   const [values, setValues] = useState(INITIAL_VALUES)
   const [attachmentFile, setAttachmentFile] = useState(null)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successPayload, setSuccessPayload] = useState(null)
   const attachmentInputRef = useRef(null)
 
   function getErrorId(fieldName) {
@@ -145,6 +151,17 @@ function ReportForm() {
     }
   }
 
+  function resetForm() {
+    setValues(INITIAL_VALUES)
+    setAttachmentFile(null)
+    setErrors({})
+    setSubmitError('')
+
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = ''
+    }
+  }
+
   function focusFirstInvalidField(nextErrors) {
     const firstField = FIELD_FOCUS_ORDER.find((fieldName) => nextErrors[fieldName])
     if (!firstField) {
@@ -155,14 +172,45 @@ function ReportForm() {
     target?.focus()
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
+
+    if (isSubmitting) {
+      return
+    }
+
     const nextErrors = validate(values, attachmentFile)
     setErrors(nextErrors)
+    setSubmitError('')
 
     if (Object.keys(nextErrors).length > 0) {
       focusFirstInvalidField(nextErrors)
+      return
     }
+
+    setIsSubmitting(true)
+
+    const result = await submitReport(values, attachmentFile)
+
+    if (result.ok) {
+      setSuccessPayload(result.data)
+      resetForm()
+      setIsSubmitting(false)
+      return
+    }
+
+    if (result.type === 'validation') {
+      const mappedErrors = result.fieldErrors || {}
+      setErrors(mappedErrors)
+      focusFirstInvalidField(mappedErrors)
+      setIsSubmitting(false)
+      return
+    }
+
+    setSubmitError(
+      result.message || 'Something went wrong while submitting your report.',
+    )
+    setIsSubmitting(false)
   }
 
   const hasErrors = Object.keys(errors).length > 0
@@ -170,6 +218,36 @@ function ReportForm() {
   return (
     <section className="report-form-card" aria-label="Report submission form">
       <form className="report-form" onSubmit={handleSubmit} noValidate>
+        {successPayload ? (
+          <div className="form-success" role="status" aria-live="polite">
+            <h2>Report submitted successfully</h2>
+            {successPayload.message ? <p>{successPayload.message}</p> : null}
+            {successPayload.id ? (
+              <p>
+                <strong>Report ID:</strong> {successPayload.id}
+              </p>
+            ) : null}
+            {successPayload.status ? (
+              <p>
+                <strong>Status:</strong> {successPayload.status}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="form-secondary-action"
+              onClick={() => setSuccessPayload(null)}
+            >
+              Submit another report
+            </button>
+          </div>
+        ) : null}
+
+        {submitError ? (
+          <div className="form-alert form-alert--error" role="alert">
+            {submitError}
+          </div>
+        ) : null}
+
         {hasErrors ? (
           <div className="form-alert" role="alert">
             Please review the highlighted fields and try again.
@@ -180,14 +258,14 @@ function ReportForm() {
           <legend>Report Summary</legend>
 
           <div className="form-grid form-grid--two-up">
-            <div className="field">
-              <div className="field__label-row">
-                <label htmlFor="title">
-                  Title
-                  <span className="field__required">{REQUIRED_LABEL}</span>
-                </label>
-                <small className="field-counter">{values.title.length}/255</small>
-              </div>
+            <FieldRow
+              id="title"
+              label="Title"
+              required
+              counter={<CharacterCount current={values.title.length} max={255} />}
+              error={errors.title}
+              errorId={getErrorId('title')}
+            >
               <input
                 id="title"
                 name="title"
@@ -199,17 +277,16 @@ function ReportForm() {
                 aria-invalid={Boolean(errors.title)}
                 aria-describedby={errors.title ? getErrorId('title') : undefined}
               />
-              {errors.title ? <p id={getErrorId('title')}>{errors.title}</p> : null}
-            </div>
+            </FieldRow>
 
-            <div className="field">
-              <div className="field__label-row">
-                <label htmlFor="affected_area">
-                  Affected Area
-                  <span className="field__required">{REQUIRED_LABEL}</span>
-                </label>
-                <small className="field-counter">{values.affected_area.length}/255</small>
-              </div>
+            <FieldRow
+              id="affected_area"
+              label="Affected Area"
+              required
+              counter={<CharacterCount current={values.affected_area.length} max={255} />}
+              error={errors.affected_area}
+              errorId={getErrorId('affected_area')}
+            >
               <input
                 id="affected_area"
                 name="affected_area"
@@ -221,18 +298,17 @@ function ReportForm() {
                 aria-invalid={Boolean(errors.affected_area)}
                 aria-describedby={errors.affected_area ? getErrorId('affected_area') : undefined}
               />
-              {errors.affected_area ? (
-                <p id={getErrorId('affected_area')}>{errors.affected_area}</p>
-              ) : null}
-            </div>
+            </FieldRow>
           </div>
 
           <div className="form-grid form-grid--two-up">
-            <div className="field">
-              <label htmlFor="vulnerability_type">
-                Vulnerability Type
-                <span className="field__required">{REQUIRED_LABEL}</span>
-              </label>
+            <FieldRow
+              id="vulnerability_type"
+              label="Vulnerability Type"
+              required
+              error={errors.vulnerability_type}
+              errorId={getErrorId('vulnerability_type')}
+            >
               <select
                 id="vulnerability_type"
                 name="vulnerability_type"
@@ -253,18 +329,15 @@ function ReportForm() {
                   </option>
                 ))}
               </select>
-              {errors.vulnerability_type ? (
-                <p id={getErrorId('vulnerability_type')}>
-                  {errors.vulnerability_type}
-                </p>
-              ) : null}
-            </div>
+            </FieldRow>
 
-            <div className="field">
-              <label htmlFor="reporter_severity_estimate">
-                Severity Estimate
-                <span className="field__required">{REQUIRED_LABEL}</span>
-              </label>
+            <FieldRow
+              id="reporter_severity_estimate"
+              label="Severity Estimate"
+              required
+              error={errors.reporter_severity_estimate}
+              errorId={getErrorId('reporter_severity_estimate')}
+            >
               <select
                 id="reporter_severity_estimate"
                 name="reporter_severity_estimate"
@@ -285,23 +358,20 @@ function ReportForm() {
                   </option>
                 ))}
               </select>
-              {errors.reporter_severity_estimate ? (
-                <p id={getErrorId('reporter_severity_estimate')}>
-                  {errors.reporter_severity_estimate}
-                </p>
-              ) : null}
-            </div>
+            </FieldRow>
           </div>
         </fieldset>
 
         <fieldset className="form-section">
           <legend>Technical Details</legend>
 
-          <div className="field">
-            <label htmlFor="reproduction_steps">
-              Reproduction Steps
-              <span className="field__required">{REQUIRED_LABEL}</span>
-            </label>
+          <FieldRow
+            id="reproduction_steps"
+            label="Reproduction Steps"
+            required
+            error={errors.reproduction_steps}
+            errorId={getErrorId('reproduction_steps')}
+          >
             <textarea
               id="reproduction_steps"
               name="reproduction_steps"
@@ -318,18 +388,15 @@ function ReportForm() {
                   : undefined
               }
             />
-            {errors.reproduction_steps ? (
-              <p id={getErrorId('reproduction_steps')}>
-                {errors.reproduction_steps}
-              </p>
-            ) : null}
-          </div>
+          </FieldRow>
 
-          <div className="field">
-            <label htmlFor="impact_description">
-              Impact Description
-              <span className="field__required">{REQUIRED_LABEL}</span>
-            </label>
+          <FieldRow
+            id="impact_description"
+            label="Impact Description"
+            required
+            error={errors.impact_description}
+            errorId={getErrorId('impact_description')}
+          >
             <textarea
               id="impact_description"
               name="impact_description"
@@ -344,22 +411,19 @@ function ReportForm() {
                   : undefined
               }
             />
-            {errors.impact_description ? (
-              <p id={getErrorId('impact_description')}>
-                {errors.impact_description}
-              </p>
-            ) : null}
-          </div>
+          </FieldRow>
         </fieldset>
 
         <fieldset className="form-section">
           <legend>Reporter Contact</legend>
 
-          <div className="field">
-            <label htmlFor="contact_email">
-              Contact Email
-              <span className="field__required">{REQUIRED_LABEL}</span>
-            </label>
+          <FieldRow
+            id="contact_email"
+            label="Contact Email"
+            required
+            error={errors.contact_email}
+            errorId={getErrorId('contact_email')}
+          >
             <input
               id="contact_email"
               name="contact_email"
@@ -373,13 +437,15 @@ function ReportForm() {
                 errors.contact_email ? getErrorId('contact_email') : undefined
               }
             />
-            {errors.contact_email ? (
-              <p id={getErrorId('contact_email')}>{errors.contact_email}</p>
-            ) : null}
-          </div>
+          </FieldRow>
 
-          <div className="field field--file">
-            <label htmlFor="attachment">Attachment</label>
+          <FieldRow
+            id="attachment"
+            label="Attachment"
+            className="field--file"
+            error={errors.attachment}
+            errorId={getErrorId('attachment')}
+          >
             <input
               id="attachment"
               name="attachment"
@@ -390,28 +456,18 @@ function ReportForm() {
               aria-describedby={errors.attachment ? getErrorId('attachment') : undefined}
             />
             <small>Accepted formats: PDF, TXT, PNG, JPG, JPEG, ZIP up to 5MB.</small>
-            <div className="file-selection" aria-live="polite">
-              {attachmentFile ? (
-                <>
-                  <p>
-                    Selected: <strong>{attachmentFile.name}</strong> ({formatBytes(attachmentFile.size)})
-                  </p>
-                  <button type="button" onClick={clearAttachment}>
-                    Remove selected file
-                  </button>
-                </>
-              ) : (
-                <p>No file selected.</p>
-              )}
-            </div>
-            {errors.attachment ? (
-              <p id={getErrorId('attachment')}>{errors.attachment}</p>
-            ) : null}
-          </div>
+            <FilePickerStatus
+              file={attachmentFile}
+              formatBytes={formatBytes}
+              onClear={clearAttachment}
+            />
+          </FieldRow>
         </fieldset>
 
         <div className="form-actions">
-          <button type="submit">Submit Report</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit Report'}
+          </button>
         </div>
       </form>
     </section>
