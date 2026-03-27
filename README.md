@@ -2,48 +2,78 @@
 
 ## Description
 
-This project is a small internal security report triage system built to demonstrate realistic full-stack architecture in a constrained scope. Reporters submit structured vulnerability reports through a React frontend. Laravel validates and stores submissions, securely handles optional attachments, and dispatches an asynchronous triage job so intake remains fast.
+A small internal security report triage system demonstrating realistic full-stack architecture in a constrained scope. Reporters submit structured vulnerability reports through a React frontend. Laravel validates and stores submissions, securely handles optional attachments, and dispatches an asynchronous triage job so intake remains fast.
 
-Triage uses deterministic scoring logic to assign a priority score and severity bucket, helping reviewers sort reports consistently. Reviewers then view filtered reports and make a final workflow decision. The design intentionally avoids unnecessary service boundaries and premature caching so the architecture stays coherent and maintainable.
+Triage uses deterministic scoring logic to assign a priority score and severity bucket, helping reviewers sort reports consistently. The design avoids unnecessary service boundaries so the architecture stays coherent and maintainable.
 
-In short, the goal is to show pragmatic engineering tradeoffs: enough structure to feel production-like, without overengineering the system.
+## Stack
 
-Monorepo for a bug triage platform with:
-
-- `backend/`: Laravel API
-- `frontend/`: React (Vite)
-- Docker-based local development
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + Vite 8 + react-router-dom 7 |
+| Backend | Laravel 11, PHP 8.4 |
+| Database | PostgreSQL 15 |
+| Auth | Laravel Sanctum (token) |
+| Queue | Laravel jobs, database-backed |
+| Dev env | Docker Compose |
 
 ## Current Status
 
-- Backend containerized and running
-- PostgreSQL connected
-- Base Laravel migrations working
-- Frontend container service added in docker compose
+| Area | Status |
+|------|--------|
+| Backend | ✅ Complete — 71 tests passing |
+| Frontend | 🚧 In progress — reporter submission flow done (19 tests passing) |
+| Queue worker | ✅ Running as separate compose service |
+| Reviewer UI | ⏳ Not started |
 
 ## Project Structure
 
 ```text
 bug-triage-system/
-├── backend/            # Laravel app
-├── frontend/           # React app (Vite)
-├── docker-compose.yml  # App, frontend, postgres services
-└── .env                # Docker compose environment variables
+├── backend/            # Laravel API (see backend/README.md)
+├── frontend/           # React + Vite SPA (see frontend/README.md)
+├── docker-compose.yml  # app, frontend, postgres, worker services
+└── .env                # Docker Compose secrets (not committed)
 ```
 
-## Run the Project
-
-From repo root:
+## Running the Project
 
 ```bash
+# Build and start all services
 docker compose up --build
+
+# Or start in background
+docker compose up -d --build
 ```
 
-Services:
+| Service | URL |
+|---------|-----|
+| React frontend | http://localhost:5173 |
+| Laravel backend | http://localhost:8000 |
+| PostgreSQL | localhost:5432 |
 
-- Laravel backend: http://localhost:8000
-- Vite frontend: http://localhost:5173
-- PostgreSQL: localhost:5432
+The `worker` service starts automatically alongside the others and processes the triage queue.
+
+## Running Tests
+
+```bash
+# Backend (PHP)
+docker compose exec app php artisan test
+
+# Frontend (Vitest)
+docker compose exec frontend npm test
+```
+
+## Environment Variables
+
+The project root `.env` is used by Docker Compose only (credentials, ports).  
+The frontend reads `frontend/.env` at build time. Copy the example file to get started:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+See `frontend/.env.example` for available variables.
 
 ## Branch Flow
 
