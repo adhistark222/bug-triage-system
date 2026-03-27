@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import ReportSubmitPage from '../pages/reporter/ReportSubmitPage.jsx'
 import ReviewerLoginPage from '../pages/reviewer/ReviewerLoginPage.jsx'
+import ReviewerReportDetailPage from '../pages/reviewer/ReviewerReportDetailPage.jsx'
 import ReviewerReportsPage from '../pages/reviewer/ReviewerReportsPage.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
 
@@ -14,6 +15,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ReviewerReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reviewer/reports/:reportId"
+        element={
+          <ProtectedRoute>
+            <ReviewerReportDetailPage />
           </ProtectedRoute>
         }
       />

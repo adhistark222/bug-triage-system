@@ -81,7 +81,7 @@ describe('ReviewerReportsPage', () => {
     expect(fetchReviewerReports).toHaveBeenCalledWith('reviewer-token-123', {
       status: '',
       severity_bucket: '',
-      sort_by: 'created_at',
+      sort_by: 'priority_score',
       sort_dir: 'desc',
     })
   })
@@ -164,7 +164,7 @@ describe('ReviewerReportsPage', () => {
       expect(fetchReviewerReports).toHaveBeenLastCalledWith('reviewer-token-123', {
         status: 'submitted',
         severity_bucket: '',
-        sort_by: 'created_at',
+        sort_by: 'priority_score',
         sort_dir: 'desc',
       })
     })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { logoutReviewer } from '../../api/auth.js'
 import { fetchReviewerReports } from '../../api/reviewerReports.js'
 import { clearAuthToken, getAuthToken } from '../../auth/session.js'
@@ -8,7 +8,7 @@ import AppLayout from '../../layouts/AppLayout.jsx'
 const INITIAL_FILTERS = {
   status: '',
   severity_bucket: '',
-  sort_by: 'created_at',
+  sort_by: 'priority_score',
   sort_dir: 'desc',
 }
 
@@ -161,8 +161,8 @@ function ReviewerReportsPage() {
               <label className="reviewer-filter-field">
                 <span>Sort by</span>
                 <select name="sort_by" value={filters.sort_by} onChange={handleFilterChange}>
-                  <option value="created_at">Created time</option>
                   <option value="priority_score">Priority score</option>
+                  <option value="created_at">Created time</option>
                 </select>
               </label>
 
@@ -185,7 +185,14 @@ function ReviewerReportsPage() {
                   <article key={report.id} className="reviewer-report-card">
                     <div className="reviewer-report-card__header">
                       <div>
-                        <h3>{report.title}</h3>
+                        <h3>
+                          <Link
+                            className="reviewer-report-card__link"
+                            to={`/reviewer/reports/${report.id}`}
+                          >
+                            {report.title}
+                          </Link>
+                        </h3>
                         <p>{formatLabel(report.vulnerability_type)}</p>
                       </div>
                       <span className={`reviewer-badge reviewer-badge--${report.status}`}>

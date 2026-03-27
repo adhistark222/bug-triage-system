@@ -39,4 +39,14 @@ describe('App routing', () => {
       screen.getByRole('heading', { name: /reviewer sign in/i }),
     ).toBeInTheDocument()
   })
+
+  it('redirects unauthenticated reviewer detail route access to login', () => {
+    localStorage.removeItem('bug-triage-token')
+
+    renderApp(['/reviewer/reports/report-123'])
+
+    expect(
+      screen.getByRole('heading', { name: /reviewer sign in/i }),
+    ).toBeInTheDocument()
+  })
 })
