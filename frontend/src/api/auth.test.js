@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loginReviewer } from './auth.js'
+import { loginReviewer, logoutReviewer } from './auth.js'
 
 describe('loginReviewer', () => {
   beforeEach(() => {
@@ -78,6 +78,40 @@ describe('loginReviewer', () => {
       ok: false,
       type: 'network',
       message: 'Unable to reach the server right now. Check your connection and try again.',
+    })
+  })
+})
+
+describe('logoutReviewer', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('posts the reviewer token to the logout endpoint', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        message: 'Logged out successfully.',
+      }),
+    })
+
+    const result = await logoutReviewer('reviewer-token-123')
+
+    expect(fetch).toHaveBeenCalledWith('/api/v1/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer reviewer-token-123',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      message: 'Logged out successfully.',
     })
   })
 })

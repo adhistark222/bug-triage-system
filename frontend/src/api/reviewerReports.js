@@ -6,11 +6,16 @@ async function tryParseJson(response) {
   }
 }
 
-export async function fetchReviewerReports(token) {
+export async function fetchReviewerReports(token, filters = {}) {
+  const query = new URLSearchParams(
+    Object.entries(filters).filter(([, value]) => value !== '' && value != null),
+  ).toString()
+  const url = query ? `/api/v1/reviewer/reports?${query}` : '/api/v1/reviewer/reports'
+
   let response
 
   try {
-    response = await fetch('/api/v1/reviewer/reports', {
+    response = await fetch(url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,

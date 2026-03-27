@@ -58,3 +58,46 @@ export async function loginReviewer(credentials) {
     message: body?.message || 'Something went wrong while signing in.',
   }
 }
+
+export async function logoutReviewer(token) {
+  let response
+
+  try {
+    response = await fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  } catch {
+    return {
+      ok: false,
+      type: 'network',
+      message:
+        'Unable to reach the server right now. Check your connection and try again.',
+    }
+  }
+
+  const body = await tryParseJson(response)
+
+  if (response.ok) {
+    return {
+      ok: true,
+      message: body?.message || 'Logged out successfully.',
+    }
+  }
+
+  if (response.status === 401) {
+    return {
+      ok: false,
+      type: 'auth',
+      message: body?.message || 'Unauthenticated.',
+    }
+  }
+
+  return {
+    ok: false,
+    type: 'server',
+    message: body?.message || 'Something went wrong while logging out.',
+  }
+}

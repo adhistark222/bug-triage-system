@@ -37,14 +37,21 @@ describe('fetchReviewerReports', () => {
       }),
     })
 
-    const result = await fetchReviewerReports('token-123')
+    const result = await fetchReviewerReports('token-123', {
+      status: 'triaged',
+      sort_by: 'priority_score',
+      sort_dir: 'desc',
+    })
 
-    expect(fetch).toHaveBeenCalledWith('/api/v1/reviewer/reports', {
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/reviewer/reports?status=triaged&sort_by=priority_score&sort_dir=desc',
+      {
       method: 'GET',
       headers: {
         Authorization: 'Bearer token-123',
       },
-    })
+      },
+    )
 
     expect(result).toEqual({
       ok: true,
