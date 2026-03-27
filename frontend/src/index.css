@@ -50,12 +50,16 @@ body {
   margin: 0 auto;
 }
 
-.report-submit-view {
+.report-submit-view,
+.reviewer-login-view,
+.reviewer-reports-view {
   display: grid;
   gap: 22px;
 }
 
-.report-intro {
+.report-intro,
+.reviewer-login-intro,
+.reviewer-reports-hero {
   background: linear-gradient(135deg, #11314f 0%, #0f766e 100%);
   color: #f3fbff;
   border-radius: var(--radius-lg);
@@ -64,12 +68,23 @@ body {
   text-align: left;
 }
 
-.report-intro h1 {
+.report-intro h1,
+.reviewer-login-intro h1,
+.reviewer-reports-hero h1 {
   margin: 8px 0 12px;
   color: #f8feff;
   font-size: clamp(2rem, 3vw, 2.8rem);
   letter-spacing: -0.03em;
   line-height: 1.1;
+}
+
+.reviewer-auth-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--base-1);
+  box-shadow: var(--shadow-card);
+  padding: 26px;
+  max-width: 620px;
 }
 
 .report-intro__eyebrow {

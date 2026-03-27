@@ -3,15 +3,37 @@ import { render, screen } from '@testing-library/react'
 import App from '../App.jsx'
 
 describe('App routing', () => {
-  it('renders reporter submission page at root route', () => {
+  function renderApp(initialEntries) {
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={initialEntries}>
         <App />
       </MemoryRouter>,
     )
+  }
+
+  it('renders reporter submission page at root route', () => {
+    renderApp(['/'])
 
     expect(
       screen.getByRole('heading', { name: /submit security report/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders reviewer login page at reviewer login route', () => {
+    renderApp(['/reviewer/login'])
+
+    expect(
+      screen.getByRole('heading', { name: /reviewer sign in/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('redirects unauthenticated reviewer route access to login', () => {
+    localStorage.removeItem('bug-triage-token')
+
+    renderApp(['/reviewer/reports'])
+
+    expect(
+      screen.getByRole('heading', { name: /reviewer sign in/i }),
     ).toBeInTheDocument()
   })
 })
