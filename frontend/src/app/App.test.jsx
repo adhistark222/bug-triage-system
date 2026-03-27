@@ -17,6 +17,9 @@ describe('App routing', () => {
     expect(
       screen.getByRole('heading', { name: /submit security report/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /reviewer sign in/i }),
+    ).toHaveAttribute('href', '/reviewer/login')
   })
 
   it('renders reviewer login page at reviewer login route', () => {

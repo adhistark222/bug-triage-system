@@ -1,7 +1,14 @@
+import { Link } from 'react-router-dom'
+
 function SubmissionIntro() {
   return (
     <header className="report-intro" aria-label="Submission guidance">
-      <p className="report-intro__eyebrow">Public Security Intake</p>
+      <div className="report-intro__topbar">
+        <p className="report-intro__eyebrow">Public Security Intake</p>
+        <Link className="report-intro__reviewer-link" to="/reviewer/login">
+          Reviewer sign in
+        </Link>
+      </div>
       <h1>Submit Security Report</h1>
       <p className="report-intro__lead">
         Share clear, reproducible details so the reviewer team can triage your
