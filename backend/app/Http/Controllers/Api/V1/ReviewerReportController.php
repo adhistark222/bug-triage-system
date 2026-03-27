@@ -106,15 +106,23 @@ class ReviewerReportController extends Controller
      */
     public function updateStatus(Report $report, UpdateReportStatusRequest $request): JsonResponse
     {
+        $override = (bool) ($request->validated()['override'] ?? false);
+
+        if ($report->status === 'submitted') {
+            throw ValidationException::withMessages([
+                'status' => 'Submitted reports must be triaged before a reviewer can set a disposition.',
+            ]);
+        }
+
         // Validate that the report can be dispositioned
-        if (! $report->canBeDispositioned()) {
+        if (! $override && ! $report->canBeDispositioned()) {
             throw ValidationException::withMessages([
                 'status' => 'Report must be in triaged status to set a final disposition.',
             ]);
         }
 
         // Validate that we're not re-dispositioning an already dispositioned report
-        if ($report->isDispositioned()) {
+        if (! $override && $report->isDispositioned()) {
             throw ValidationException::withMessages([
                 'status' => 'Report has already been dispositioned and cannot be changed.',
             ]);
