@@ -39,6 +39,7 @@ class ReviewerReportController extends Controller
             'severity_bucket'    => 'nullable|string|in:low,medium,high,critical',
             'sort_by'            => 'nullable|string|in:priority_score,created_at',
             'sort_dir'           => 'nullable|string|in:asc,desc',
+            'per_page'           => 'nullable|integer|in:10,15,25,50',
         ]);
 
         // Build query with eager loading of triageResult
@@ -74,8 +75,9 @@ class ReviewerReportController extends Controller
             $query->orderBy('created_at', $sortDir);
         }
 
-        // Paginate (default 15 per page)
-        $reports = $query->paginate(15);
+        // Paginate — caller may request 10, 15, 25, or 50 per page; default 15
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $reports = $query->paginate($perPage);
 
         return ReportResource::collection($reports);
     }
