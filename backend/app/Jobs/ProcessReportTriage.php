@@ -67,7 +67,7 @@ class ProcessReportTriage implements ShouldQueue
                 'priority_score'  => $scoreResult['priority_score'],
                 'severity_bucket' => $scoreResult['severity_bucket'],
                 'fingerprint'     => $fingerprint,
-                'breakdown_json'  => json_encode($scoreResult['breakdown']),
+                'breakdown_json'  => $scoreResult['breakdown'],
             ]
         );
 

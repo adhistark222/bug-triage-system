@@ -28,14 +28,14 @@ class TriageResultFactory extends Factory
             'priority_score' => $total,
             'severity_bucket' => $this->bucketFor($total),
             'fingerprint'    => hash('sha256', (string) Str::uuid()),
-            'breakdown_json' => json_encode([
+            'breakdown_json' => [
                 'severity_score'     => $severityScore,
                 'vuln_type_score'    => $vulnTypeScore,
                 'completeness_score' => $completenessScore,
                 'impact_score'       => $impactScore,
                 'area_score'         => $areaScore,
                 'total'              => $total,
-            ]),
+            ],
         ];
     }
 

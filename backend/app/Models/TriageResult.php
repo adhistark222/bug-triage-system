@@ -57,6 +57,38 @@ class TriageResult extends Model
      */
     public function getBreakdownArray(): array
     {
-        return $this->breakdown_json?->toArray() ?? [];
+        $breakdown = $this->breakdown_json;
+
+        if ($breakdown instanceof \Illuminate\Support\Collection) {
+            return $breakdown->toArray();
+        }
+
+        if (is_array($breakdown)) {
+            return $breakdown;
+        }
+
+        if (is_string($breakdown)) {
+            $decoded = json_decode($breakdown, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        $rawBreakdown = $this->getRawOriginal('breakdown_json');
+        if (! is_string($rawBreakdown) || trim($rawBreakdown) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($rawBreakdown, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (is_string($decoded)) {
+            $decodedNested = json_decode($decoded, true);
+            if (is_array($decodedNested)) {
+                return $decodedNested;
+            }
+        }
+
+        return [];
     }
 }

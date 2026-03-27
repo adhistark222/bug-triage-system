@@ -39,6 +39,7 @@ class ReviewerReportController extends Controller
             'severity_bucket'    => 'nullable|string|in:low,medium,high,critical',
             'sort_by'            => 'nullable|string|in:priority_score,created_at',
             'sort_dir'           => 'nullable|string|in:asc,desc',
+            'per_page'           => 'nullable|integer|in:10,15,25,50',
         ]);
 
         // Build query with eager loading of triageResult
@@ -74,8 +75,9 @@ class ReviewerReportController extends Controller
             $query->orderBy('created_at', $sortDir);
         }
 
-        // Paginate (default 15 per page)
-        $reports = $query->paginate(15);
+        // Paginate — caller may request 10, 15, 25, or 50 per page; default 15
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $reports = $query->paginate($perPage);
 
         return ReportResource::collection($reports);
     }
@@ -106,15 +108,23 @@ class ReviewerReportController extends Controller
      */
     public function updateStatus(Report $report, UpdateReportStatusRequest $request): JsonResponse
     {
+        $override = (bool) ($request->validated()['override'] ?? false);
+
+        if ($report->status === 'submitted') {
+            throw ValidationException::withMessages([
+                'status' => 'Submitted reports must be triaged before a reviewer can set a disposition.',
+            ]);
+        }
+
         // Validate that the report can be dispositioned
-        if (! $report->canBeDispositioned()) {
+        if (! $override && ! $report->canBeDispositioned()) {
             throw ValidationException::withMessages([
                 'status' => 'Report must be in triaged status to set a final disposition.',
             ]);
         }
 
         // Validate that we're not re-dispositioning an already dispositioned report
-        if ($report->isDispositioned()) {
+        if (! $override && $report->isDispositioned()) {
             throw ValidationException::withMessages([
                 'status' => 'Report has already been dispositioned and cannot be changed.',
             ]);
