@@ -243,6 +243,23 @@ class ReviewerDispositionTest extends TestCase
                  ->assertJsonPath('data.triage_result.severity_bucket', fn ($bucket) => in_array($bucket, ['low', 'medium', 'high', 'critical']));
     }
 
+    public function test_report_detail_includes_breakdown_component_scores(): void
+    {
+        $report   = $this->createTriagedReport();
+        $reviewer = User::factory()->create();
+
+        $response = $this->actingAs($reviewer, 'sanctum')
+                         ->getJson("/api/v1/reviewer/reports/{$report->id}");
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('data.triage_result.breakdown.severity_score', fn ($value) => is_int($value))
+                 ->assertJsonPath('data.triage_result.breakdown.vuln_type_score', fn ($value) => is_int($value))
+                 ->assertJsonPath('data.triage_result.breakdown.completeness_score', fn ($value) => is_int($value))
+                 ->assertJsonPath('data.triage_result.breakdown.impact_score', fn ($value) => is_int($value))
+                 ->assertJsonPath('data.triage_result.breakdown.area_score', fn ($value) => is_int($value))
+                 ->assertJsonPath('data.triage_result.breakdown.total', fn ($value) => is_int($value));
+    }
+
     public function test_report_detail_does_not_expose_attachment_storage_path(): void
     {
         $report   = Report::factory()->withAttachment()->create(['status' => 'triaged', 'triaged_at' => now()]);
@@ -342,6 +359,20 @@ class ReviewerDispositionTest extends TestCase
              ->assertJsonValidationErrors(['status']);
     }
 
+    public function test_reviewer_can_override_an_already_accepted_report(): void
+    {
+        $report   = Report::factory()->create(['status' => 'accepted', 'reviewed_at' => now()]);
+        $reviewer = User::factory()->create();
+
+        $this->actingAs($reviewer, 'sanctum')
+             ->patchJson("/api/v1/reviewer/reports/{$report->id}/status", [
+                 'status' => 'rejected',
+                 'override' => true,
+             ])
+             ->assertStatus(200)
+             ->assertJsonPath('data.status', 'rejected');
+    }
+
     public function test_cannot_redisposition_a_rejected_report(): void
     {
         $report   = Report::factory()->create(['status' => 'rejected', 'reviewed_at' => now()]);
@@ -349,6 +380,20 @@ class ReviewerDispositionTest extends TestCase
 
         $this->actingAs($reviewer, 'sanctum')
              ->patchJson("/api/v1/reviewer/reports/{$report->id}/status", ['status' => 'accepted'])
+             ->assertStatus(422)
+             ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_override_still_cannot_disposition_a_submitted_report(): void
+    {
+        $report   = Report::factory()->create(['status' => 'submitted']);
+        $reviewer = User::factory()->create();
+
+        $this->actingAs($reviewer, 'sanctum')
+             ->patchJson("/api/v1/reviewer/reports/{$report->id}/status", [
+                 'status' => 'accepted',
+                 'override' => true,
+             ])
              ->assertStatus(422)
              ->assertJsonValidationErrors(['status']);
     }

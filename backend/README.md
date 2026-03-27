@@ -17,9 +17,9 @@ The API is designed to be:
 
 ## Current Status
 
-- Test suite: 71 passed
+- Test suite: 74 passed (196 assertions)
 - Unit tests lock scoring and fingerprint behavior
-- Feature tests cover submission, auth, reviewer workflows, and attachment download
+- Feature tests cover submission, auth, reviewer workflows, attachment download, and disposition override
 
 ## High-Level Architecture
 
@@ -41,7 +41,7 @@ The API is designed to be:
 	- ReviewerReportController: listing, detail, status transitions, downloads
 - app/Http/Requests/Api/V1
 	- StoreReportRequest: submission validation rules
-	- UpdateReportStatusRequest: controlled status transition rules
+	- UpdateReportStatusRequest: controlled status transition rules with optional override flag
 - app/Http/Resources/Api/V1
 	- ReportResource and TriageResultResource: API response shape
 - app/Jobs
@@ -92,8 +92,16 @@ Why:
 Why:
 - Prevents invalid workflow states
 - Keeps triage lifecycle auditable
+- Optional `override: true` in PATCH body lets reviewers re-disposition already-reviewed reports, but `submitted` reports remain always blocked regardless
 
-## Important Fixes Made During Phase 3
+### 7) Server-Side Pagination
+
+Why:
+- Keeps response payload small regardless of queue size
+- Lets the reviewer control how many rows they want to scan at once
+- Returns standard Laravel `meta` block (`current_page`, `last_page`, `per_page`, `from`, `to`, `total`) so the frontend can render full pagination controls without extra requests
+
+## Important Fixes Made During Development
 
 - Fixed a parse error in StoreReportRequest caused by a stray use statement inside rules
 - Repaired severity validation rule that was accidentally truncated
@@ -104,6 +112,7 @@ Why:
 	- Revokes current personal access token
 	- Clears web guard/session state
 	- Forgets resolved auth guards to prevent stale in-memory auth state in test cycle
+- Fixed double-encoding of breakdown_json: removed json_encode() call so AsCollection cast receives a native PHP array directly; added getBreakdownArray() with legacy fallback for rows created before the fix
 
 ## API Endpoints
 
@@ -117,6 +126,53 @@ Authenticated reviewer:
 - GET /api/v1/reviewer/reports/{report}
 - PATCH /api/v1/reviewer/reports/{report}/status
 - GET /api/v1/reviewer/reports/{report}/attachment
+
+## Reviewer Queue — Query Parameters
+
+`GET /api/v1/reviewer/reports` accepts all parameters as query strings:
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `status` | submitted \| triaged \| accepted \| rejected \| needs_more_info | (all) | Filter by report status |
+| `severity_bucket` | low \| medium \| high \| critical | (all) | Filter by triage severity |
+| `vulnerability_type` | any string | (all) | Filter by vulnerability category |
+| `sort_by` | priority_score \| created_at | created_at | Sort field |
+| `sort_dir` | asc \| desc | desc | Sort direction |
+| `per_page` | 10 \| 15 \| 25 \| 50 | 15 | Results per page |
+| `page` | integer | 1 | Requested page number (handled automatically by Laravel) |
+
+Response envelope:
+```json
+{
+  "data": [ ...ReportResource ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 4,
+    "per_page": 15,
+    "from": 1,
+    "to": 15,
+    "total": 56
+  },
+  "links": { "first": "...", "last": "...", "prev": null, "next": "..." }
+}
+```
+
+## Disposition Override
+
+`PATCH /api/v1/reviewer/reports/{report}/status`
+
+Normal body:
+```json
+{ "status": "accepted" }
+```
+
+Override body (re-disposition an already-reviewed report):
+```json
+{ "status": "rejected", "override": true }
+```
+
+- Without `override`: only works when report is in `triaged` state
+- With `override: true`: also works on `accepted`, `rejected`, `needs_more_info`; `submitted` always remains blocked
 
 ## How To Test the API End-to-End
 
@@ -147,8 +203,8 @@ Step B: Login reviewer
 - POST /api/v1/auth/login
 - Save token from response
 
-Step C: List reports
-- GET /api/v1/reviewer/reports with Authorization: Bearer token
+Step C: List reports with pagination
+- GET /api/v1/reviewer/reports?per_page=10&page=2 with Authorization: Bearer token
 
 Step D: View details
 - GET /api/v1/reviewer/reports/{id}
@@ -158,6 +214,11 @@ Step E: Disposition
 	- accepted
 	- rejected
 	- needs_more_info
+
+Step F: Override disposition (re-review)
+- PATCH /api/v1/reviewer/reports/{id}/status with:
+	- status: accepted (or any valid disposition)
+	- override: true
 
 Step F: Logout
 - POST /api/v1/auth/logout with Authorization: Bearer token

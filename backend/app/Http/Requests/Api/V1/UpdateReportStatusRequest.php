@@ -22,6 +22,10 @@ class UpdateReportStatusRequest extends FormRequest
                 'string',
                 'in:accepted,rejected,needs_more_info',
             ],
+            'override' => [
+                'sometimes',
+                'boolean',
+            ],
         ];
     }
 
